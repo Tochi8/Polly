@@ -21,7 +21,13 @@ if (hours < 12) {
 
 export default function AdminPage() {
 
-const [polls, setPolls] = useState([]);
+    interface Poll {
+        id: string
+        title: string
+        status: 'draft' | 'live' | 'closed'
+    }
+
+const [polls, setPolls] = useState<Poll[]>([]);
 const [isLoadingPolls, setisloadingPolls] = useState(false);
 
 
@@ -30,7 +36,7 @@ const fetchPolls = async () => {
 
     try {
         const res = await fetch('/api/polls'); {/* fetch active polls */}
-        const data = await res.json(); {/* receive response */}
+        const data: {polls: Poll[]} = await res.json(); {/* receive response */}
 
     if(!res.ok) { {/* if the response coming from the server is bad */}
         setisloadingPolls(false);
