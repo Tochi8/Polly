@@ -41,3 +41,7 @@ export interface Vote {
     voterTokenId: string
     createdAt: string
 }
+
+export interface CandidatesWithVotes extends Candidate{
+    voteCount: number
+}
