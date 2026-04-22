@@ -1,14 +1,10 @@
 'use client'
-import {Poll, Candidate, PollVoter} from '@/types'
+import {Poll, PollVoter, CandidatesWithVotes} from '@/types'
 import Button from '../ui/Button'
-
-interface CandidateWithVotes extends Candidate {
-    voteCount: number
-}
 
 interface AlreadyVotedProps {
     poll: Poll
-    candidates: CandidateWithVotes[]
+    candidates: CandidatesWithVotes[]
     voters: PollVoter[]
     voter: PollVoter
 }
@@ -77,18 +73,4 @@ export default function AlreadyVoted ({
         </>
     )
 }
-
-{/* 
-    // should show the page when token has been used, so this will be a component
-
-    // wil require less logic
-
-    // import Poll, Candidate, PollVoter
-
-    // logic for who is leading:
-    get the candidate, calculate the no. of votes, the percentage, get the poll deadline
-
-    // Button to view full result (ResultsChart)
-    // Button to go back to home page
-    */}
 
