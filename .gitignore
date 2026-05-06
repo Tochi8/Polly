@@ -32,6 +32,10 @@ supabase/config.toml
 *.pem
 *.key
 
+# Blockchain
+artifacts/           
+cache/   
+
 # Debug
 npm-debug.log*
 yarn-debug.log*

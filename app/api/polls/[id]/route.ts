@@ -72,7 +72,7 @@ export async function DELETE(req: Request, {params}: {params: {id: string}}) {
         return NextResponse.json({error: error.message}, {status: 500})
     }
 
-    return NextResponse.json({message: 'Poll deleted successfully'})
+    return NextResponse.json({message: deletedPoll})
 
     } catch (error) {
         return NextResponse.json({error: 'Failed to delete poll, please try again'}, {status: 500})

@@ -1,27 +1,35 @@
 'use client';
-import Button from "@/components/ui/Button";
-import VotingCard from "@/components/vote/VotingCard";
+import Button from "@/components/ui/Button"
+import VotingCard from "@/components/vote/VotingCard"
+import AlreadyVoted from "@/components/vote/AlreadyVoted"
+import {Poll, PollVoter, User, CandidatesWithVotes} from "@/types"
 import { useState } from "react";
 
 interface VotePageProps {
-    title?: string
-    eligible?: string
-    deadline?: string
-    voterId?: string
+    poll: Poll
+    voters: PollVoter[]
+    voter: PollVoter
+    votingAs: User
+    candidates: CandidatesWithVotes[]
 }
 
 export default function VoterPage ({
-    title,
-    eligible,
-    deadline,
-    voterId
+   poll,
+   voters,
+   voter,
+   votingAs,
+   candidates
 }: VotePageProps) {
 
-    const [submitting, setSubmitting] = useState(false);
-    const [successful, setSuccessful] = useState('');
+    const [submitting, setSubmitting] = useState(false)
+    const [successful, setSuccessful] = useState('')
+    const [selected, setSelected] = useState('')
+    const [alreadyVoted, setAlreadyVoted] = useState(false)
+
+    const eligibleVoters = voters.length
 
     const handleVoteCast = async () => {
-         setSubmitting(true);
+         setSubmitting(true)
 
          try {
         const res = await fetch('/api/vote', {
@@ -30,14 +38,18 @@ export default function VoterPage ({
                 'Content-type': 'application/json',
             },
             body: JSON.stringify({
-                candidateId: '',
-                voterId: '',
+                candidateId: selected,
+                voterId: voter.id,
             }),
         });
 
         const data = await res.json();
        
         if(!res.ok) {
+            if (res.status === 403) {
+                setAlreadyVoted(true);
+                return;
+            }
             setSuccessful(data.error);
             return;
         }
@@ -55,17 +67,24 @@ export default function VoterPage ({
         <>
         <div>
             <div>
-                {title}
-                <span>{eligible}</span>
-                <span>{deadline}</span>
+                <h1>{poll.title}</h1>
+                <span>{eligibleVoters}</span>
+                <span>{poll.closesAt}</span>
             </div>
 
             <div>
                 <div>
-                    {voterId}
+                    {votingAs.username} . {votingAs.provider}
                 </div>
 
-                 <VotingCard />
+                {candidates.map((candidate) => (
+                  <VotingCard
+                  key={candidate.id}
+                  candidate={candidate}
+                  selected={selected}
+                  onSelect={(id) => setSelected(id)}
+                  />  
+                ))} 
             </div>
 
             <Button 
@@ -75,6 +94,13 @@ export default function VoterPage ({
             onClick={handleVoteCast}>
                 Cast My Vote
             </Button>
+
+               { alreadyVoted && <AlreadyVoted 
+                poll={poll}
+                candidates={candidates}
+                voters={voters}
+                voter={voter}
+                />}
 
             {submitting && (
                 <Button 
