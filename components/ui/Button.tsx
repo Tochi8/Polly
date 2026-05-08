@@ -4,7 +4,8 @@ interface ButtonProps {
     fullWidth?: boolean
     loading?: boolean
     disabled?: boolean
-    onClick?: () => void
+    onContinue?: () => void
+    onPublish?: () => void
     type?: 'button' | 'submit'
 }
 
@@ -14,8 +15,9 @@ export default function Button({
     fullWidth = false,
     loading = false,
     disabled = false,
-    onClick,
-    type = 'button'
+    onContinue,
+    onPublish,
+    type
 }: ButtonProps) {
 
     const base = `
@@ -34,15 +36,13 @@ export default function Button({
     }
 
     return (
-        <button
-        type={type}
-        onClick={onClick}
-        disabled={disabled || loading}
-        className={`${base} ${variants[variant]}`}
-        >
-            {loading && <span className="w-4 h-4 border-2 border-current/30
-            border-t-current rounded-full animate-spin"/>}
-            {children}
-        </button>
+         <button
+            type="button"
+            onClick={onContinue || onPublish}
+            disabled={loading}
+            className={`${base} ${variants[variant]}`}
+          >
+           {children}
+          </button>
     );
 }

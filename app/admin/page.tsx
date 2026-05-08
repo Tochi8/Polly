@@ -2,27 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { Poll, User } from '@/types/database'
 
-interface Poll {
-  id: string
-  title: string
-  status: string
-  voting_closes_at: string
-  created_by: string
-  registeredCount: number
-  votesCount: number
-}
-
-interface User {
-  id: string
-  username: string
-  provider: string
-  role: string
-}
 
 function isPollExpired(closesAt: string): boolean {
   return new Date(closesAt) < new Date()
 }
+
 
 function formatStatus(poll: Poll): 'completed' | 'live' | 'registration_open' | 'closed' {
   if (isPollExpired(poll.voting_closes_at) || poll.status === 'closed') return 'completed'
@@ -40,6 +26,7 @@ function StatCard({ label, value, color }: { label: string; value: number; color
     </div>
   )
 }
+
 
 function PollCard({
   poll,
@@ -231,7 +218,6 @@ export default function AdminDashboard() {
     setUser(parsed)
   }, [router])
 
-  // ── Fetch polls ──
   const fetchPolls = useCallback(async (userId: string) => {
     setLoading(true)
     try {

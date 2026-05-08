@@ -25,8 +25,7 @@ export async function GET(req: Request) {
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
-
-        // Shape the response to include counts directly on each poll
+        
         const shaped = polls.map((poll: any) => ({
             ...poll,
             registeredCount: poll.registrations?.[0]?.count ?? 0,
