@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 import  {generateVoteHash}  from '@/lib/hash'
 import { recordVoteOnChain } from '@/lib/contract'
+import { getPollPhase } from '@/lib/utils'
 
 export async function POST(req: Request) {
 
@@ -22,8 +23,9 @@ export async function POST(req: Request) {
             return NextResponse.json({error: 'Poll could not be found!'}, {status: 404})
         }
 
-        if(poll.status !== 'voting_open') {
-            return NextResponse.json({error: 'Voting is not yet open for this poll, check back later'}, {status: 400})
+        const phase = getPollPhase(poll)
+        if (phase !== 'voting_open') {
+        return NextResponse.json({ error: 'Voting is not yet open for this poll, check back later' }, { status: 400 })
         }
 
         const {data: registeredUser} = await supabase
@@ -84,7 +86,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: voteError.message }, { status: 500 })
         }
 
-        const txHash = await recordVoteOnChain(userHash)
+        let txHash: string
+
+        try {
+         txHash = await recordVoteOnChain(userHash)
+        } catch (blockchainError: any) {
+        if (blockchainError?.reason === 'Vote already recorded') {
+        txHash = 'already_on_chain'
+        } else {
+        throw blockchainError
+        }
+    }
 
         const { error: updateError } = await supabase
         .from('votes')
@@ -98,9 +110,10 @@ export async function POST(req: Request) {
         return NextResponse.json({vote: { ...vote, status: 'confirmed', tx_hash: txHash }})
 
     } catch (error) {
-        return NextResponse.json(
-            { error: 'Something went wrong, please try again' },
-            { status: 500 }
-        )
+    console.error('Cast vote error:', error)
+    return NextResponse.json(
+        { error: 'Something went wrong, please try again' },
+        { status: 500 }
+    )
     }
-} 
+}

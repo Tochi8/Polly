@@ -6,9 +6,13 @@ export async function GET(req: Request) {
     const code = searchParams.get('code')
     const role = searchParams.get('state') ?? 'voter'
 
+    console.log('1. Callback hit — code:', code, 'role:', role)
+
     if (code) {
         const supabase = await createSupabaseServerClient()
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+        console.log('2. Exchange result — error:', error, 'user:', data?.user?.id)
 
         if (!error && data.user) {
             const providerData = data.user.app_metadata
@@ -20,7 +24,8 @@ export async function GET(req: Request) {
                 data.user.email ||
                 'unknown'
 
-            // Save to your users table
+            console.log('3. Provider data — provider:', provider, 'username:', username)
+
             const res = await fetch(`${origin}/api/auth/callback`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -29,15 +34,19 @@ export async function GET(req: Request) {
 
             const userData = await res.json()
 
+            console.log('4. User save result:', userData)
+
             if (userData.user) {
-                // Encode user and redirect to login page to save to localStorage
                 const encoded = encodeURIComponent(JSON.stringify(userData.user))
                 return NextResponse.redirect(
-                    `${origin}/login?user=${encoded}&role=${role}`
+                    `${origin}/auth/complete?user=${encoded}`
                 )
             }
+
+            console.log('5. No user in response — falling through to error')
         }
     }
 
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    console.log('6. Falling through to error redirect')
+    return NextResponse.redirect(`${origin}/auth/complete?error=auth_failed`)
 }

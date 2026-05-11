@@ -19,20 +19,20 @@ function getContract() {
 
 // Records a vote hash on-chain and returns the transaction hash
 export async function recordVoteOnChain(voteHash: string): Promise<string> {
+    console.log('Attempting blockchain transaction...')
     const contract = getContract()
-
-    // Convert the hex string hash to bytes32 format the contract expects
-    const bytes32Hash = ethers.encodeBytes32String(voteHash.slice(0, 31))
-
-    const tx = await contract.recordVote(bytes32Hash)
-
-    // Wait for the transaction to be confirmed on-chain
-    const receipt = await tx.wait()
-
-    // Return the transaction hash — this is what gets stored in Supabase
-    return receipt.hash
+    try {
+        const bytes32Hash = ethers.encodeBytes32String(voteHash.slice(0, 31))
+        const tx = await contract.recordVote(bytes32Hash)
+        console.log('Transaction sent:', tx.hash)
+        const receipt = await tx.wait()
+        console.log('Transaction confirmed:', receipt.hash)
+        return receipt.hash
+    } catch (err) {
+        console.error('Blockchain error:', err)
+        throw err
+    }
 }
-
 // Checks if a vote hash exists on-chain — used for verification
 export async function checkVoteOnChain(voteHash: string): Promise<boolean> {
     const contract = getContract()

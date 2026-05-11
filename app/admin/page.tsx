@@ -1,8 +1,10 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Poll, User } from '@/types/database'
+import { Poll, User } from '@/types/index'
 
 
 function isPollExpired(closesAt: string): boolean {
@@ -10,11 +12,15 @@ function isPollExpired(closesAt: string): boolean {
 }
 
 
-function formatStatus(poll: Poll): 'completed' | 'live' | 'registration_open' | 'closed' {
-  if (isPollExpired(poll.voting_closes_at) || poll.status === 'closed') return 'completed'
-  if (poll.status === 'voting_open') return 'live'
-  if (poll.status === 'registration_open') return 'registration_open'
-  return 'closed'
+function formatStatus(poll: Poll): 'completed' | 'live' | 'registration_open' | 'upcoming' | 'closed' {
+  const now = new Date()
+  
+  if (!poll.registration_opens_at) return 'closed'
+  if (now < new Date(poll.registration_opens_at)) return 'upcoming'
+  if (now < new Date(poll.registration_closes_at)) return 'registration_open'
+  if (now < new Date(poll.voting_opens_at)) return 'closed'
+  if (now < new Date(poll.voting_closes_at)) return 'live'
+  return 'completed'
 }
 
 
@@ -58,29 +64,27 @@ function PollCard({
           </div>
 
           {/* Status button */}
-          {status === 'completed' ? (
-            <span className="bg-green-100 text-green-600 text-xs font-semibold px-3 py-1.5 rounded-full">
-              Completed
-            </span>
-          ) : status === 'live' ? (
-            <button
-              onClick={() => onClosePoll(poll)}
-              className="bg-teal-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-teal-600 transition-colors"
-            >
-              Close Poll
-            </button>
-          ) : status === 'registration_open' ? (
-            <button
-              onClick={() => onClosePoll(poll)}
-              className="bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-blue-600 transition-colors"
-            >
-              Go Live
-            </button>
-          ) : (
-            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-full">
-              Closed
-            </span>
-          )}
+          {status === 'completed' || status === 'closed' ? (
+    <span className="bg-green-100 text-green-600 text-xs font-semibold px-3 py-1.5 rounded-full">
+        Completed
+    </span>
+) : status === 'live' ? (
+    <span className="bg-teal-100 text-teal-600 text-xs font-semibold px-3 py-1.5 rounded-full">
+        Live
+    </span>
+) : status === 'registration_open' ? (
+    <span className="bg-blue-100 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full">
+        Registration
+    </span>
+) : status === 'upcoming' ? (
+    <span className="bg-yellow-100 text-yellow-600 text-xs font-semibold px-3 py-1.5 rounded-full">
+        Upcoming
+    </span>
+) : (
+    <span className="bg-gray-100 text-gray-500 text.xs font-semibold px-3 py-1.5 rounded-full">
+        Closed
+    </span>
+)}
         </div>
       </div>
     </div>
@@ -203,8 +207,9 @@ export default function AdminDashboard() {
   const [confirmPoll, setConfirmPoll] = useState<Poll | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
+ useEffect(() => {
     const stored = localStorage.getItem('polly_user')
     if (!stored) {
       router.push('/login')
@@ -216,7 +221,7 @@ export default function AdminDashboard() {
       return
     }
     setUser(parsed)
-  }, [router])
+}, [])
 
   const fetchPolls = useCallback(async (userId: string) => {
     setLoading(true)
@@ -240,6 +245,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user?.id) fetchPolls(user.id)
   }, [user, fetchPolls])
+
+  useEffect(() => {
+    setMounted(true)
+}, [])
 
   const totalRegistered = polls.reduce((acc, p) => acc + p.registeredCount, 0)
   const totalVotes = polls.reduce((acc, p) => acc + p.votesCount, 0)
@@ -283,7 +292,17 @@ export default function AdminDashboard() {
     router.push('/')
   }
 
-  if (!user) return null
+  if (!mounted) return (
+    <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="w-10 h-10 rounded-full border-4 border-gray-100 border-t-green-500 animate-spin" />
+    </div>
+)
+
+if (!user) return (
+    <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="w-10 h-10 rounded-full border-4 border-gray-100 border-t-green-500 animate-spin" />
+    </div>
+)
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">

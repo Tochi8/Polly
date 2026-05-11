@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -13,6 +15,9 @@ interface Poll {
   id: string
   title: string
   status: string
+  registration_opens_at: string
+  registration_closes_at: string
+  voting_opens_at: string
   voting_closes_at: string
   token: string
 }
@@ -29,6 +34,16 @@ interface Result {
   name: string
   votes: number
   percentage: number
+}
+
+function getPollPhase(poll: Poll): string {
+  const now = new Date()
+  if (!poll.registration_opens_at) return 'draft'
+  if (now < new Date(poll.registration_opens_at)) return 'upcoming'
+  if (now < new Date(poll.registration_closes_at)) return 'registration_open'
+  if (now < new Date(poll.voting_opens_at)) return 'registration_closed'
+  if (now < new Date(poll.voting_closes_at)) return 'voting_open'
+  return 'closed'
 }
 
 const RESULT_COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed']
@@ -89,10 +104,12 @@ function ResultsScreen({
   poll,
   results,
   totalVotes,
+  receipt,
 }: {
   poll: Poll
   results: Result[]
   totalVotes: number
+  receipt?:  { candidateName: string; txHash: string } | null
 }) {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
@@ -137,10 +154,34 @@ function ResultsScreen({
             </div>
           ))}
         </div>
+
+        {receipt && (
+        <div className="mt-6 border border-green-200 rounded-2xl p-4 bg-green-50">
+        <div className="flex items-center gap-2 mb-3">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <p className="text-sm font-semibold text-green-700">Your vote receipt</p>
+      </div>
+      <div className="mb-3">
+      <p className="text-xs text-green-600 mb-1">You voted for</p>
+      <p className="text-sm font-bold text-green-800">{receipt.candidateName}</p>
+    </div>
+    <div>
+      <p className="text-xs text-green-600 mb-1">Blockchain confirmation hash</p>
+      <p className="text-[11px] font-mono text-green-700 break-all leading-relaxed">
+        {receipt.txHash}
+      </p>
+      <p className="text-xs text-green-500 mt-2">
+        Use this hash to verify your vote on Polygon Amoy
+      </p>
+    </div>
+  </div>
+  )}
       </div>
     </div>
-  )
-}
+    )
+  }
 
 
 type PageState =
@@ -166,6 +207,7 @@ export default function VotePage() {
   const [totalVotes, setTotalVotes] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [receipt, setReceipt] = useState<{ candidateName: string; txHash: string } | null>(null)
 
 
   useEffect(() => {
@@ -198,30 +240,30 @@ export default function VotePage() {
       setCandidates(fetchedCandidates)
 
 
-      if (
-        fetchedPoll.status === 'closed' ||
-        new Date(fetchedPoll.voting_closes_at) < new Date()
-      ) {
+      const phase = getPollPhase(fetchedPoll)
+
+      if (phase === 'closed') {
         await loadResults(fetchedPoll.id)
         setPageState('results')
         return
       }
 
     
-      if (fetchedPoll.status === 'registration_open') {
-        setPageState('closed')
-        return
-      }
+      if (phase === 'upcoming' || phase === 'registration_open' || phase === 'registration_closed') {
+    setPageState('closed')
+    return
+}
 
-     
-      await fetch('/api/registrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: currentUser.id,
-          poll_id: fetchedPoll.id,
-        }),
+      const regRes = await fetch('/api/registrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        poll_id: fetchedPoll.id,
+      }),
       })
+      const regData = await regRes.json()
+      console.log('Registration result:', regData)
 
       const voteCheckRes = await fetch(
         `/api/votes/check?user_id=${currentUser.id}&poll_id=${fetchedPoll.id}`
@@ -235,10 +277,11 @@ export default function VotePage() {
       }
 
       setPageState('vote')
-    } catch {
-      setError('Something went wrong loading this poll')
-      setPageState('error')
-    }
+    } catch (err) {
+    console.error('loadPoll error:', err)
+    setError('Something went wrong loading this poll')
+    setPageState('error')
+}
   }
 
   async function loadResults(pollId: string) {
@@ -270,13 +313,18 @@ export default function VotePage() {
       })
 
       const data = await res.json()
+      console.log('Vote response:', data)
 
       if (!res.ok) {
         setError(data.error || 'Failed to submit vote')
         setPageState('vote')
         return
       }
-
+      const votedCandidate = candidates.find(c => c.id === selectedId)
+      setReceipt({
+      candidateName: votedCandidate?.name ?? 'Unknown',
+      txHash: data.vote?.tx_hash ?? ''
+      })
       setPageState('recorded')
     } catch {
       setError('Something went wrong submitting your vote')
@@ -310,9 +358,10 @@ export default function VotePage() {
         poll={poll!}
         results={results}
         totalVotes={totalVotes}
+        receipt={pageState === 'results' ? receipt : null}
       />
     )
-  }
+}
 
   if (pageState === 'error') {
     return (
@@ -327,18 +376,23 @@ export default function VotePage() {
   }
 
   if (pageState === 'closed') {
+    const phase = poll ? getPollPhase(poll) : 'upcoming'
+    const message = 
+        phase === 'upcoming' ? 'This poll hasn\'t opened for registration yet. Check back soon.' :
+        phase === 'registration_open' ? 'Registration is open but voting hasn\'t started yet.' :
+        phase === 'registration_closed' ? 'Registration is closed. Voting opens soon.' :
+        'This poll is not currently active.'
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
-        <p className="text-4xl mb-4">🔒</p>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
-          Voting not open yet
-        </h2>
-        <p className="text-sm text-gray-400">
-          Registration is open but voting hasn't started. Check back soon.
-        </p>
-      </div>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
+            <p className="text-4xl mb-4">🔒</p>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Not open yet
+            </h2>
+            <p className="text-sm text-gray-400">{message}</p>
+        </div>
     )
-  }
+}
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">

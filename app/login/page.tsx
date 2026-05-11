@@ -1,69 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase'
 
 
 interface TelegramAuthData {
-    id: number
-    first_name: string
-    last_name?: string
-    username?: string
-    photo_url?: string
-    auth_date: number
-    hash: string
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
 }
 
 type Role = 'admin' | 'voter' | null
-type AuthProvider = 'discord' | 'twitter' | 'telegram'
+type AuthProvider = 'discord' | 'x' | 'telegram'
 
-export default function LoginPage() {
 
-  async function handleTelegramLogin(telegramData: TelegramAuthData) {
-    if (!role) {
-        setError('Please select how you want to use Polly first.')
-        return
-    }
-
-    setLoading('telegram')
-    setError(null)
-
-    try {
-        const res = await fetch('/api/auth/telegram', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramData, role }),
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-            setError(data.error || 'Telegram login failed')
-            setLoading(null)
-            return
-        }
-
-        localStorage.setItem('polly_user', JSON.stringify(data.user))
-
-        const redirect = localStorage.getItem('polly_redirect')
-        if (redirect) {
-            localStorage.removeItem('polly_redirect')
-            router.push(redirect)
-            return
-        }
-
-        if (data.user.role === 'admin') {
-            router.push('/admin')
-        } else {
-            router.push('/')
-        }
-    } catch {
-        setError('Something went wrong with Telegram login')
-        setLoading(null)
-    }
-}
-  
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -72,11 +30,18 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    (window as any).onTelegramAuth = handleTelegramLogin
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      setError('Sign in failed. Please try again.')
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    ;(window as any).onTelegramAuth = handleTelegramLogin
 
     const script = document.createElement('script')
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-login', process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME!)
+    script.setAttribute('data-telegram-login', process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? '')
     script.setAttribute('data-size', 'large')
     script.setAttribute('data-onauth', 'onTelegramAuth(user)')
     script.setAttribute('data-request-access', 'write')
@@ -86,56 +51,23 @@ export default function LoginPage() {
     if (container) container.appendChild(script)
 
     return () => {
-        if (container) container.innerHTML = ''
-        delete (window as any).onTelegramAuth
+      if (container) container.innerHTML = ''
+      delete (window as any).onTelegramAuth
     }
-}, [role])
-
-  useEffect(() => {
-    const userParam = searchParams.get('user')
-    const errorParam = searchParams.get('error')
-
-    if (errorParam) {
-      setError('Sign in failed. Please try again.')
-      return
-    }
-
-    if (userParam) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userParam))
-        localStorage.setItem('polly_user', JSON.stringify(user))
-
-        const redirect = localStorage.getItem('polly_redirect')
-        if (redirect) {
-          localStorage.removeItem('polly_redirect')
-          router.push(redirect)
-          return
-        }
-
-        if (user.role === 'admin') {
-          router.push('/admin')
-        } else {
-          router.push('/')
-        }
-      } catch {
-        setError('Something went wrong. Please try again.')
-      }
-    }
-  }, [searchParams, router])
+  }, [role])
 
   async function handleSignIn(provider: AuthProvider) {
     if (!role) {
       setError('Please select how you want to use Polly first.')
       return
     }
-
     setLoading(provider)
     setError(null)
 
     const supabase = createSupabaseBrowserClient()
 
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider as 'discord' | 'twitter',
+      provider: provider as 'discord' | 'x',
       options: {
         redirectTo: `${window.location.origin}/auth/callback?state=${role}`,
         scopes: provider === 'discord' ? 'identify email' : undefined,
@@ -144,6 +76,50 @@ export default function LoginPage() {
 
     if (error) {
       setError(error.message)
+      setLoading(null)
+    }
+  }
+
+  async function handleTelegramLogin(telegramData: TelegramAuthData) {
+    if (!role) {
+      setError('Please select how you want to use Polly first.')
+      return
+    }
+
+    setLoading('telegram')
+    setError(null)
+
+    try {
+      const res = await fetch('/api/auth/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramData, role }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Telegram login failed')
+        setLoading(null)
+        return
+      }
+
+      localStorage.setItem('polly_user', JSON.stringify(data.user))
+
+      const redirect = localStorage.getItem('polly_redirect')
+      if (redirect) {
+        localStorage.removeItem('polly_redirect')
+        router.push(redirect)
+        return
+      }
+
+      if (data.user.role === 'admin') {
+        router.push('/admin')
+      } else {
+        router.push('/')
+      }
+    } catch {
+      setError('Something went wrong with Telegram login')
       setLoading(null)
     }
   }
@@ -170,7 +146,7 @@ export default function LoginPage() {
               onClick={() => { setRole('admin'); setError(null) }}
               className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition-all ${
                 role === 'admin'
-                  ? 'border-lime bg-lime text-ink'
+                  ? 'border-[#2d5a1b] bg-[#2d5a1b] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -180,7 +156,7 @@ export default function LoginPage() {
               onClick={() => { setRole('voter'); setError(null) }}
               className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition-all ${
                 role === 'voter'
-                  ? 'border-ink bg-ink text-white'
+                  ? 'border-[#2d5a1b] bg-[#2d5a1b] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -214,11 +190,11 @@ export default function LoginPage() {
           </button>
 
           <button
-            onClick={() => handleSignIn('twitter')}
+            onClick={() => handleSignIn('x')}
             disabled={!!loading}
             className="w-full flex items-center justify-center gap-3 bg-black text-white rounded-2xl py-4 font-semibold text-sm hover:bg-gray-900 transition-colors disabled:opacity-50"
           >
-            {loading === 'twitter' ? (
+            {loading === 'x' ? (
               <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
             ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
@@ -228,7 +204,8 @@ export default function LoginPage() {
             Continue with X
           </button>
 
-          <div id="telegram-login-container" className="w-full flex justify-center mt-1" />
+          {/* Telegram widget container */}
+          <div id="telegram-login-container" className="w-full flex justify-center" />
         </div>
 
         {/* Footer note */}
@@ -239,5 +216,21 @@ export default function LoginPage() {
 
       </div>
     </div>
+  )
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="w-10 h-10 rounded-full border-4 border-gray-100 border-t-green-500 animate-spin" />
+    </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <LoginContent />
+    </Suspense>
   )
 }

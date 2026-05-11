@@ -1,21 +1,22 @@
 export interface User {
-    id: string
-    provider: 'discord' | 'telegram' | 'x'
-    providerId: string
-    username: string
-    role: 'admin' | 'voter'
-    createdAt: string
+  id: string
+  username: string
+  provider: string
+  role: string
 }
 
 export interface Poll {
-    id: string
-    createdBy: string
-    title: string
-    description?: string
-    status: 'draft' | 'live' | 'closed'
-    resultsPublic: boolean
-    closesAt?: string
-    createdAt: string
+  id: string
+  title: string
+  status: string
+  voting_closes_at: string
+  voting_opens_at: string
+  registration_opens_at: string
+  registration_closes_at: string
+  created_by: string
+  registeredCount: number
+  votesCount: number
+  token: string
 }
 
 export interface Candidate {
