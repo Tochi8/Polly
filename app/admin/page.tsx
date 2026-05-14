@@ -101,7 +101,6 @@ function PollCard({
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate leading-snug">{poll.title}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Polygon Amoy</p>
         </div>
         <StatusBadge status={status} />
       </div>
