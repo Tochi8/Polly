@@ -6,7 +6,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase'
 
-
 interface TelegramAuthData {
   id: number
   first_name: string
@@ -19,7 +18,6 @@ interface TelegramAuthData {
 
 type Role = 'admin' | 'voter' | null
 type AuthProvider = 'discord' | 'x' | 'telegram'
-
 
 function LoginContent() {
   const router = useRouter()
@@ -64,12 +62,16 @@ function LoginContent() {
     setLoading(provider)
     setError(null)
 
+    const redirect = localStorage.getItem('polly_redirect') ?? ''
+    document.cookie = `polly_auth_role=${role}; path=/; max-age=600`
+    document.cookie = `polly_auth_redirect=${redirect}; path=/; max-age=600`
+
     const supabase = createSupabaseBrowserClient()
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider as 'discord' | 'x',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?state=${role}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         scopes: provider === 'discord' ? 'identify email' : undefined,
       },
     })
@@ -125,26 +127,26 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md md:max-w-lg">
 
         {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Polly</h1>
+        <div className="text-center mb-10 md:mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Polly</h1>
           <p className="text-sm text-gray-400">
             Verified voting for real communities
           </p>
         </div>
 
         {/* Role selection */}
-        <div className="mb-8">
+        <div className="mb-8 md:mb-10">
           <p className="text-sm font-medium text-gray-600 mb-3 text-center">
             I want to...
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => { setRole('admin'); setError(null) }}
-              className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition-all ${
+              className={`flex-1 py-4 rounded-2xl text-sm font-semibold border-2 transition-all ${
                 role === 'admin'
                   ? 'border-[#2d5a1b] bg-[#2d5a1b] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -154,7 +156,7 @@ function LoginContent() {
             </button>
             <button
               onClick={() => { setRole('voter'); setError(null) }}
-              className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition-all ${
+              className={`flex-1 py-4 rounded-2xl text-sm font-semibold border-2 transition-all ${
                 role === 'voter'
                   ? 'border-[#2d5a1b] bg-[#2d5a1b] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -167,7 +169,7 @@ function LoginContent() {
 
         {/* Error */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 text-center">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 text-center">
             {error}
           </div>
         )}
@@ -205,11 +207,11 @@ function LoginContent() {
           </button>
 
           {/* Telegram widget container */}
-          <div id="telegram-login-container" className="w-full flex justify-center" />
+          <div id="telegram-login-container" className="w-full flex justify-center pt-2" />
         </div>
 
         {/* Footer note */}
-        <p className="text-center text-xs text-gray-400 mt-8 leading-relaxed">
+        <p className="text-center text-xs text-gray-400 mt-10 leading-relaxed px-4">
           By continuing you confirm you are a community member.{' '}
           One account per person, verified by identity.
         </p>
