@@ -12,6 +12,7 @@ function AuthCompleteContent() {
   useEffect(() => {
     const userParam = searchParams.get('user')
     const error = searchParams.get('error')
+    const redirect = searchParams.get('redirect')
 
     if (error) {
       router.push('/login?error=auth_failed')
@@ -23,10 +24,8 @@ function AuthCompleteContent() {
         const user = JSON.parse(decodeURIComponent(userParam))
         localStorage.setItem('polly_user', JSON.stringify(user))
 
-        const redirect = localStorage.getItem('polly_redirect')
         if (redirect) {
-          localStorage.removeItem('polly_redirect')
-          router.push(redirect)
+          router.push(decodeURIComponent(redirect))
           return
         }
 

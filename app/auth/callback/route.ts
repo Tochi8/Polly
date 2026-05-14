@@ -1,12 +1,16 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(req: Request) {
     const { searchParams, origin } = new URL(req.url)
     const code = searchParams.get('code')
-    const role = searchParams.get('state') ?? 'voter'
 
-    console.log('1. Callback hit — code:', code, 'role:', role)
+    const cookieStore = cookies()
+    const role = cookieStore.get('polly_auth_role')?.value ?? 'voter'
+    const redirect = cookieStore.get('polly_auth_redirect')?.value ?? ''
+
+    console.log('1. Callback hit — code:', code, 'role:', role, 'redirect:', redirect)
 
     if (code) {
         const supabase = await createSupabaseServerClient()
@@ -38,8 +42,9 @@ export async function GET(req: Request) {
 
             if (userData.user) {
                 const encoded = encodeURIComponent(JSON.stringify(userData.user))
+                const redirectParam = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
                 return NextResponse.redirect(
-                    `${origin}/auth/complete?user=${encoded}`
+                    `${origin}/auth/complete?user=${encoded}${redirectParam}`
                 )
             }
 

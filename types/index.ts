@@ -3,6 +3,7 @@ export interface User {
   username: string
   provider: string
   role: string
+   created_at: string
 }
 
 export interface Poll {
@@ -17,6 +18,7 @@ export interface Poll {
   registeredCount: number
   votesCount: number
   token: string
+  allowed_providers: string[]
 }
 
 export interface Candidate {

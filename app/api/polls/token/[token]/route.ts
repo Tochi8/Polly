@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 import { getPollPhase } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
     req: Request,
     { params }: { params: { token: string } }
@@ -23,10 +25,8 @@ export async function GET(
             return NextResponse.json({ error: 'Poll not found' }, { status: 404 })
         }
 
-        // Calculate current phase from timestamps
         const currentPhase = getPollPhase(poll)
 
-        // Auto-update status in database if it has changed
         if (currentPhase !== poll.status) {
             await supabase
                 .from('polls')
@@ -44,6 +44,7 @@ export async function GET(
                 voting_opens_at: poll.voting_opens_at,
                 voting_closes_at: poll.voting_closes_at,
                 token: poll.token,
+                allowed_providers: poll.allowed_providers ?? ['x', 'discord', 'telegram'],
             },
             candidates: poll.candidates,
         })

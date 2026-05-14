@@ -50,6 +50,7 @@ export async function GET(req: Request) {
                 registration_closes_at: poll.registration_closes_at,
                 created_at: poll.created_at,
                 token: poll.token,
+                allowed_providers: poll.allowed_providers ?? ['x', 'discord', 'telegram'],
                 registeredCount: poll.registrations?.[0]?.count ?? 0,
                 votesCount: poll.votes?.[0]?.count ?? 0,
             }
@@ -76,7 +77,8 @@ export async function POST(req: Request) {
             registration_closes_at,
             voting_opens_at,
             voting_closes_at,
-            candidates
+            candidates,
+            allowed_providers,
         } = await req.json()
 
         const status = getPollPhase({
@@ -101,6 +103,7 @@ export async function POST(req: Request) {
                 registration_closes_at,
                 voting_opens_at,
                 voting_closes_at,
+                allowed_providers: allowed_providers ?? ['x', 'discord', 'telegram'],
             })
             .select()
             .single()

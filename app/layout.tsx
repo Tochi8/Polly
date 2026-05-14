@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Polly",
   description: "Manipulation-proof polls for social communities",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 const dmSans = DM_Sans({
