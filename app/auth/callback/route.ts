@@ -23,10 +23,11 @@ export async function GET(req: Request) {
             const provider = providerData.provider
             const provider_id = data.user.id
             const username =
-                data.user.user_metadata?.full_name ||
-                data.user.user_metadata?.user_name ||
-                data.user.email ||
-                'unknown'
+            data.user.user_metadata?.full_name ||
+            data.user.user_metadata?.name ||
+            data.user.user_metadata?.user_name ||
+            data.user.email?.split('@')[0] ||
+            'unknown'
 
             console.log('3. Provider data — provider:', provider, 'username:', username)
 

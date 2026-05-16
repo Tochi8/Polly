@@ -35,19 +35,20 @@ export async function GET(
         }
 
         return NextResponse.json({
-            poll: {
-                id: poll.id,
-                title: poll.title,
-                status: currentPhase,
-                registration_opens_at: poll.registration_opens_at,
-                registration_closes_at: poll.registration_closes_at,
-                voting_opens_at: poll.voting_opens_at,
-                voting_closes_at: poll.voting_closes_at,
-                token: poll.token,
-                allowed_providers: poll.allowed_providers ?? ['x', 'discord', 'telegram'],
-            },
-            candidates: poll.candidates,
-        })
+        poll: {
+        id: poll.id,
+        title: poll.title,
+        status: currentPhase,
+        registration_opens_at: poll.registration_opens_at,
+        registration_closes_at: poll.registration_closes_at,
+        voting_opens_at: poll.voting_opens_at,
+        voting_closes_at: poll.voting_closes_at,
+        token: poll.token,
+        allowed_providers: poll.allowed_providers ?? ['x', 'discord', 'telegram'],
+        community_id: poll.community_id ?? null,
+    },
+        candidates: poll.candidates,
+    })
 
     } catch (error) {
         return NextResponse.json(

@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 function XIcon() {
@@ -35,11 +35,19 @@ const ALL_PROVIDERS: { key: string; label: string; icon: React.ReactNode }[] = [
   { key: 'telegram', label: 'Telegram', icon: <TelegramIcon /> },
 ]
 
+interface Community {
+  id: string
+  name: string
+  memberCount: number
+  registration_open: boolean
+}
+
 interface PollForm {
   image: File | null
   imagePreview: string | null
   question: string
   options: string[]
+  communityId: string
   registrationOpens: string
   registrationCloses: string
   votingOpens: string
@@ -49,28 +57,23 @@ interface PollForm {
 
 function validateForm(form: PollForm): string | null {
   if (!form.question.trim()) return 'Please enter a question'
-
   const validOptions = form.options.filter(o => o.trim().length > 0)
   if (validOptions.length < 2) return 'Please add at least two options'
-
+  if (!form.communityId) return 'Please select a community for this poll'
   if (!form.registrationOpens) return 'Please set when registration opens'
   if (!form.registrationCloses) return 'Please set when registration closes'
   if (!form.votingOpens) return 'Please set when voting opens'
   if (!form.votingCloses) return 'Please set when voting closes'
-
   const regOpens = new Date(form.registrationOpens)
   const regCloses = new Date(form.registrationCloses)
   const voteOpens = new Date(form.votingOpens)
   const voteCloses = new Date(form.votingCloses)
   const now = new Date()
-
   if (regOpens < now) return 'Registration open time must be in the future'
   if (regCloses <= regOpens) return 'Registration must close after it opens'
   if (voteOpens <= regCloses) return 'Voting must open after registration closes'
   if (voteCloses <= voteOpens) return 'Voting must close after it opens'
-
   if (form.allowedProviders.length === 0) return 'Please select at least one allowed platform'
-
   return null
 }
 
@@ -78,11 +81,15 @@ export default function NewPollPage() {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const [communities, setCommunities] = useState<Community[]>([])
+  const [communitiesLoading, setCommunitiesLoading] = useState(true)
+
   const [form, setForm] = useState<PollForm>({
     image: null,
     imagePreview: null,
     question: '',
     options: ['', ''],
+    communityId: '',
     registrationOpens: '',
     registrationCloses: '',
     votingOpens: '',
@@ -94,6 +101,23 @@ export default function NewPollPage() {
   const [error, setError] = useState<string | null>(null)
   const [createdLink, setCreatedLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  const fetchCommunities = useCallback(async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('polly_user') || '{}')
+      const res = await fetch(`/api/communities?created_by=${user.id}`)
+      const data = await res.json()
+      if (res.ok) setCommunities(data.communities || [])
+    } catch {
+      // silently fail
+    } finally {
+      setCommunitiesLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCommunities()
+  }, [fetchCommunities])
 
   function updateField<K extends keyof PollForm>(key: K, val: PollForm[K]) {
     setForm(prev => ({ ...prev, [key]: val }))
@@ -139,11 +163,11 @@ export default function NewPollPage() {
   }
 
   function handleCopy() {
-  if (!createdLink) return
-  navigator.clipboard.writeText(createdLink)
-  setCopied(true)
-  setTimeout(() => setCopied(false), 2000)
-}
+    if (!createdLink) return
+    navigator.clipboard.writeText(createdLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   async function handlePublish() {
     const validationError = validateForm(form)
@@ -167,6 +191,7 @@ export default function NewPollPage() {
           description: '',
           results_public: true,
           created_by: user.id,
+          community_id: form.communityId,
           registration_opens_at: toLocalISO(form.registrationOpens),
           registration_closes_at: toLocalISO(form.registrationCloses),
           voting_opens_at: toLocalISO(form.votingOpens),
@@ -179,13 +204,11 @@ export default function NewPollPage() {
       const data = await res.json()
 
       if (!res.ok) {
-      setError(data.error || 'Failed to create poll')
-      return
+        setError(data.error || 'Failed to create poll')
+        return
       }
 
       setCreatedLink(`${window.location.origin}/vote/${data.poll.token}`)
-
-      router.push('/admin')
     } catch {
       setError('Something went wrong, please try again')
     } finally {
@@ -196,69 +219,63 @@ export default function NewPollPage() {
   const isValid =
     form.question.trim().length > 0 &&
     form.options.filter(o => o.trim().length > 0).length >= 2 &&
+    form.communityId !== '' &&
     form.registrationOpens &&
     form.registrationCloses &&
     form.votingOpens &&
     form.votingCloses &&
     form.allowedProviders.length > 0
 
-    if (createdLink) {
-  return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100 sticky top-0 z-30">
-        <button
-          onClick={() => router.push('/admin')}
-          className="text-gray-500 text-sm hover:text-gray-800"
-        >
-          ← Back to dashboard
-        </button>
-        <span className="text-sm font-semibold text-gray-700">Poll Created</span>
-        <div className="w-10" />
-      </div>
-
-      <div className="px-4 py-10 max-w-lg mx-auto text-center">
-        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
+  if (createdLink) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5]">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-30">
+          <button onClick={() => router.push('/admin')} className="text-gray-500 text-sm hover:text-gray-800 transition-colors">
+            ← Back to dashboard
+          </button>
+          <span className="text-sm font-semibold text-gray-700">Poll Created</span>
+          <div className="w-24" />
         </div>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Poll published</h2>
-        <p className="text-sm text-gray-500 mb-8">
-          Share this link with your community to let them register and vote.
-        </p>
+        <div className="px-4 md:px-8 py-10 max-w-lg mx-auto text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 text-left">
-          <p className="text-xs text-gray-400 mb-2">Poll link</p>
-          <p className="text-sm font-mono text-gray-700 break-all leading-relaxed">{createdLink}</p>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Poll published</h2>
+          <p className="text-sm text-gray-500 mb-8 max-w-sm mx-auto">
+            Share this link with your community to let them register and vote.
+          </p>
+
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4 text-left">
+            <p className="text-xs text-gray-400 mb-2">Poll link</p>
+            <p className="text-sm font-mono text-gray-700 break-all leading-relaxed">{createdLink}</p>
+          </div>
+
+          <button
+            onClick={handleCopy}
+            className="w-full bg-[#2d5a1b] text-white rounded-2xl py-4 font-semibold text-[15px] hover:bg-[#254d17] transition-colors mb-3"
+          >
+            {copied ? 'Copied!' : 'Copy link'}
+          </button>
+
+          <button
+            onClick={() => router.push('/admin')}
+            className="w-full bg-white border border-gray-200 text-gray-600 rounded-2xl py-4 font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+          >
+            Go to dashboard
+          </button>
         </div>
-
-        <button
-          onClick={handleCopy}
-          className="w-full bg-[#2d5a1b] text-white rounded-2xl py-4 font-semibold text-[15px] hover:bg-[#254d17] transition-colors mb-3"
-        >
-          {copied ? 'Copied!' : 'Copy link'}
-        </button>
-
-        <button
-          onClick={() => router.push('/admin')}
-          className="w-full bg-white border border-gray-200 text-gray-600 rounded-2xl py-4 font-semibold text-[15px] hover:bg-gray-50 transition-colors"
-        >
-          Go to dashboard
-        </button>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-30">
-        <button
-          onClick={() => router.back()}
-          className="text-gray-500 text-sm hover:text-gray-800 transition-colors flex items-center gap-1"
-        >
+        <button onClick={() => router.back()} className="text-gray-500 text-sm hover:text-gray-800 transition-colors">
           ← Back
         </button>
         <span className="text-sm font-semibold text-gray-700">Create New Poll</span>
@@ -315,7 +332,7 @@ export default function NewPollPage() {
         </div>
 
         {/* Options */}
-        <div className="mb-8">
+        <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Options</label>
           <div className="flex flex-col gap-3">
             {form.options.map((opt, i) => (
@@ -340,8 +357,47 @@ export default function NewPollPage() {
           </div>
         </div>
 
+        {/* Community */}
+        <div className="mb-6">
+          <label className="block text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Community</label>
+          {communitiesLoading ? (
+            <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 text-sm text-gray-400">Loading communities...</div>
+          ) : communities.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4">
+              <p className="text-sm text-gray-500 mb-3">You don't have any communities yet. Create one first before publishing a poll.</p>
+              <button
+                onClick={() => router.push('/admin/communities/new')}
+                className="text-sm font-semibold text-[#2d5a1b] hover:text-[#254d17] transition-colors"
+              >
+                Create a community →
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              {communities.map((community, i) => {
+                const isSelected = form.communityId === community.id
+                return (
+                  <button
+                    key={community.id}
+                    onClick={() => updateField('communityId', community.id)}
+                    className={`flex items-center justify-between w-full px-5 py-4 transition-colors ${i < communities.length - 1 ? 'border-b border-gray-50' : ''} ${isSelected ? 'bg-white' : 'bg-gray-50'}`}
+                  >
+                    <div className="text-left">
+                      <p className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>{community.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{community.memberCount} members · {community.registration_open ? 'Registration open' : 'Registration closed'}</p>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-[#2d5a1b] bg-[#2d5a1b]' : 'border-gray-300'}`}>
+                      {isSelected && <div className="w-3 h-3 rounded-full bg-white" />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Allowed Platforms */}
-        <div className="mb-8">
+        <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Allowed Platforms</label>
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {ALL_PROVIDERS.map((provider, i) => {
@@ -368,13 +424,12 @@ export default function NewPollPage() {
         {/* Timeline */}
         <div className="mb-8">
           <label className="block text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Timeline</label>
-
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {[
-              { label: "Registration opens", key: "registrationOpens" as const },
-              { label: "Registration closes", key: "registrationCloses" as const },
-              { label: "Voting opens", key: "votingOpens" as const },
-              { label: "Voting closes", key: "votingCloses" as const },
+              { label: 'Registration opens', key: 'registrationOpens' as const },
+              { label: 'Registration closes', key: 'registrationCloses' as const },
+              { label: 'Voting opens', key: 'votingOpens' as const },
+              { label: 'Voting closes', key: 'votingCloses' as const },
             ].map((item, index) => (
               <div key={item.key} className={`px-5 py-4 ${index !== 3 ? 'border-b border-gray-50' : ''}`}>
                 <p className="text-xs text-gray-400 mb-1">{item.label}</p>
@@ -388,7 +443,6 @@ export default function NewPollPage() {
             ))}
           </div>
 
-          {/* Timeline Indicators */}
           <div className="flex items-center justify-between mt-4 px-2">
             <div className="flex flex-col items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-blue-400" />
@@ -412,11 +466,10 @@ export default function NewPollPage() {
           </div>
         </div>
 
-        {/* Publish button */}
         <button
           type="button"
           onClick={handlePublish}
-          disabled={!isValid || loading}
+          disabled={!isValid || loading || communities.length === 0}
           className="w-full bg-[#2d5a1b] text-white rounded-2xl py-4 font-semibold text-lg disabled:opacity-40 hover:bg-[#254d17] transition-colors"
         >
           {loading ? 'Publishing Poll...' : 'Publish Poll'}

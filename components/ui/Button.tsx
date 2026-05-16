@@ -1,11 +1,12 @@
+import React from 'react'
+
 interface ButtonProps {
     children: React.ReactNode
     variant?: 'ink' | 'lime' | 'ghost'
     fullWidth?: boolean
     loading?: boolean
     disabled?: boolean
-    onContinue?: () => void
-    onPublish?: () => void
+    onClick?: () => void
     type?: 'button' | 'submit'
 }
 
@@ -15,9 +16,8 @@ export default function Button({
     fullWidth = false,
     loading = false,
     disabled = false,
-    onContinue,
-    onPublish,
-    type
+    onClick,
+    type = 'button'
 }: ButtonProps) {
 
     const base = `
@@ -25,7 +25,7 @@ export default function Button({
     px-6 py-4 rounded-2xl
     font-bold text-base 
     transition-all duration-150 
-    disabled: opacity-40 disabled: cursor-not-allowed 
+    disabled:opacity-40 disabled:cursor-not-allowed 
     ${fullWidth ? 'w-full' : ''}
     `
 
@@ -36,13 +36,13 @@ export default function Button({
     }
 
     return (
-         <button
-            type="button"
-            onClick={onContinue || onPublish}
-            disabled={loading}
+        <button
+            type={type}
+            onClick={onClick}
+            disabled={disabled || loading}
             className={`${base} ${variants[variant]}`}
-          >
-           {children}
-          </button>
-    );
+        >
+            {children}
+        </button>
+    )
 }

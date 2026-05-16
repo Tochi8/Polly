@@ -21,6 +21,7 @@ interface Poll {
   voting_closes_at: string
   token: string
   allowed_providers: string[]
+  community_id: string | null
 }
 
 interface User {
@@ -45,6 +46,7 @@ type PageState =
   | 'registration_closed'
   | 'missed_registration'
   | 'not_allowed'
+  | 'not_a_member'
   | 'vote'
   | 'processing'
   | 'recorded'
@@ -81,6 +83,15 @@ function PollyLogo() {
   )
 }
 
+function PageHeader({ right }: { right?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white border-b border-gray-100">
+      <PollyLogo />
+      <div>{right}</div>
+    </div>
+  )
+}
+
 function formatDateTime(dateString: string): string {
   return new Date(dateString).toLocaleString('en-US', {
     weekday: 'short',
@@ -100,7 +111,6 @@ function timeLeft(closesAt: string): string {
   if (h > 0) return `Ends in ${h}hrs`
   return `Ends in ${m}mins`
 }
-
 
 function ProcessingScreen() {
   return (
@@ -134,27 +144,20 @@ function VoteRecordedScreen({ onViewResults }: { onViewResults: () => void }) {
 function RegisteredScreen({ poll, user }: { poll: Poll; user: User }) {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white border-b border-gray-100">
-        <div className="w-8 h-3 bg-gray-200 rounded" />
-        <div className="w-10" />
-      </div>
-
+      <PageHeader />
       <div className="px-4 md:px-8 py-10 max-w-2xl mx-auto text-center">
         <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
           <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-
         <h2 className="text-2xl font-bold text-gray-800 mb-2">You're registered!</h2>
         <p className="text-base text-gray-500 mb-8">
           @{user.username}, you have successfully registered to vote in this poll.
         </p>
-
         <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 text-left mb-8">
           <p className="text-xs text-gray-400 mb-1">POLL</p>
           <p className="text-lg font-semibold text-gray-800 mb-6">{poll.title}</p>
-
           <div className="space-y-4">
             <div className="flex justify-between">
               <div className="flex items-center gap-2">
@@ -179,7 +182,6 @@ function RegisteredScreen({ poll, user }: { poll: Poll; user: User }) {
             </div>
           </div>
         </div>
-
         <p className="text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
           Come back when voting opens to cast your vote. Bookmark this page for easy access.
         </p>
@@ -201,22 +203,18 @@ function ResultsScreen({
 }) {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white border-b border-gray-100">
-        <div className="w-8 h-3 bg-gray-200 rounded" />
-        <p className="text-xs text-orange-400 font-medium">
+      <PageHeader right={
+        <p className="text-xs md:text-sm text-orange-400 font-medium">
           {timeLeft(poll.voting_closes_at)}
         </p>
-      </div>
-
+      } />
       <div className="px-4 md:px-8 py-8 max-w-3xl mx-auto">
         <h2 className="text-2xl font-bold text-gray-800 mb-1">Poll Results</h2>
         <p className="text-gray-600 mb-8">{poll.title}</p>
-
         <div className="mb-8">
           <p className="text-5xl font-bold text-gray-800">{totalVotes}</p>
           <p className="text-sm text-gray-400">Total Votes Cast</p>
         </div>
-
         <div className="space-y-6">
           {results.map((result, i) => (
             <div key={result.id}>
@@ -229,16 +227,12 @@ function ResultsScreen({
               <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${result.percentage}%`,
-                    backgroundColor: RESULT_COLORS[i % RESULT_COLORS.length],
-                  }}
+                  style={{ width: `${result.percentage}%`, backgroundColor: RESULT_COLORS[i % RESULT_COLORS.length] }}
                 />
               </div>
             </div>
           ))}
         </div>
-
         {receipt && (
           <div className="mt-10 border border-green-200 rounded-3xl p-6 bg-green-50">
             <div className="flex items-center gap-2 mb-4">
@@ -249,14 +243,9 @@ function ResultsScreen({
             </div>
             <p className="text-green-700 mb-1">You voted for</p>
             <p className="font-bold text-lg text-green-800 mb-4">{receipt.candidateName}</p>
-            
             <p className="text-green-700 mb-1 text-sm">Transaction Hash</p>
-            <p className="font-mono text-xs text-green-700 break-all bg-white p-3 rounded-2xl">
-              {receipt.txHash}
-            </p>
-            <p className="text-xs text-green-600 mt-3">
-              You can use this hash to verify your vote on Polygon Amoy explorer.
-            </p>
+            <p className="font-mono text-xs text-green-700 break-all bg-white p-3 rounded-2xl">{receipt.txHash}</p>
+            <p className="text-xs text-green-600 mt-3">You can use this hash to verify your vote on Polygon Amoy explorer.</p>
           </div>
         )}
       </div>
@@ -306,10 +295,23 @@ export default function VotePage() {
       setPoll(fetchedPoll)
       setCandidates(fetchedCandidates)
 
+      // Provider check
       const allowedProviders: string[] = fetchedPoll.allowed_providers ?? ['x', 'discord', 'telegram']
       if (!allowedProviders.includes(currentUser.provider)) {
         setPageState('not_allowed')
         return
+      }
+
+      // Community membership check
+      if (fetchedPoll.community_id) {
+        const memberRes = await fetch(
+          `/api/communities/check-member?community_id=${fetchedPoll.community_id}&user_id=${currentUser.id}`
+        )
+        const memberData = await memberRes.json()
+        if (!memberData.isMember) {
+          setPageState('not_a_member')
+          return
+        }
       }
 
       const phase = getPollPhase(fetchedPoll)
@@ -324,30 +326,21 @@ export default function VotePage() {
         const regRes = await fetch('/api/registrations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: currentUser.id,
-            poll_id: fetchedPoll.id,
-          }),
+          body: JSON.stringify({ user_id: currentUser.id, poll_id: fetchedPoll.id }),
         })
         const regData = await regRes.json()
-
         if (!regRes.ok && !regData.error?.includes('already registered')) {
           setError(regData.error || 'Registration failed')
           setPageState('error')
           return
         }
-
         setPageState('registered')
         return
       }
 
       if (phase === 'registration_closed') {
-        const voteCheckRes = await fetch(`/api/votes/check?user_id=${currentUser.id}&poll_id=${fetchedPoll.id}`)
-        const voteCheckData = await voteCheckRes.json()
-
         const regCheckRes = await fetch(`/api/registrations/check?user_id=${currentUser.id}&poll_id=${fetchedPoll.id}`)
         const regCheckData = await regCheckRes.json()
-
         if (!regCheckData.isRegistered) {
           setPageState('missed_registration')
         } else {
@@ -359,21 +352,17 @@ export default function VotePage() {
       if (phase === 'voting_open') {
         const voteCheckRes = await fetch(`/api/votes/check?user_id=${currentUser.id}&poll_id=${fetchedPoll.id}`)
         const voteCheckData = await voteCheckRes.json()
-
         if (voteCheckData.hasVoted) {
           await loadResults(fetchedPoll.id)
           setPageState('already_voted')
           return
         }
-
         const regCheckRes = await fetch(`/api/registrations/check?user_id=${currentUser.id}&poll_id=${fetchedPoll.id}`)
         const regCheckData = await regCheckRes.json()
-
         if (!regCheckData.isRegistered) {
           setPageState('missed_registration')
           return
         }
-
         setPageState('vote')
         return
       }
@@ -404,32 +393,23 @@ export default function VotePage() {
   async function handleSubmitVote() {
     if (!selectedId || !poll || !user) return
     setPageState('processing')
-
     try {
       const res = await fetch('/api/cast-vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          poll_id: poll.id,
-          candidate_id: selectedId,
-        }),
+        body: JSON.stringify({ user_id: user.id, poll_id: poll.id, candidate_id: selectedId }),
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         setError(data.error || 'Failed to submit vote')
         setPageState('vote')
         return
       }
-
       const votedCandidate = candidates.find(c => c.id === selectedId)
       setReceipt({
         candidateName: votedCandidate?.name ?? 'Unknown',
         txHash: data.vote?.tx_hash ?? '',
       })
-
       setPageState('recorded')
     } catch {
       setError('Something went wrong submitting your vote')
@@ -453,105 +433,137 @@ export default function VotePage() {
   if (pageState === 'processing') return <ProcessingScreen />
   if (pageState === 'recorded') return <VoteRecordedScreen onViewResults={handleViewResults} />
   if (pageState === 'registered' && poll && user) return <RegisteredScreen poll={poll} user={user} />
-
   if (pageState === 'results' || pageState === 'already_voted') {
     return <ResultsScreen poll={poll!} results={results} totalVotes={totalVotes} receipt={receipt} />
   }
 
   if (pageState === 'upcoming') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 6v6l4 2"/>
-          </svg>
+      <div className="min-h-screen bg-white">
+        <PageHeader />
+        <div className="flex flex-col items-center justify-center px-8 text-center py-24">
+          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Poll not open yet</h2>
+          <p className="text-sm text-gray-400 mb-4">Registration opens on</p>
+          {poll && <p className="text-sm font-semibold text-gray-700">{formatDateTime(poll.registration_opens_at)}</p>}
         </div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Poll not open yet</h2>
-        <p className="text-sm text-gray-400 mb-4">Registration opens on</p>
-        {poll && <p className="text-sm font-semibold text-gray-700">{formatDateTime(poll.registration_opens_at)}</p>}
       </div>
     )
   }
 
   if (pageState === 'registration_closed') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mb-6">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 6v6l4 2"/>
-          </svg>
+      <div className="min-h-screen bg-white">
+        <PageHeader />
+        <div className="flex flex-col items-center justify-center px-8 text-center py-24">
+          <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Registration closed</h2>
+          <p className="text-sm text-gray-400 mb-4">You're registered. Voting opens on</p>
+          {poll && <p className="text-sm font-semibold text-gray-700">{formatDateTime(poll.voting_opens_at)}</p>}
         </div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Registration closed</h2>
-        <p className="text-sm text-gray-400 mb-4">You're registered. Voting opens on</p>
-        {poll && <p className="text-sm font-semibold text-gray-700">{formatDateTime(poll.voting_opens_at)}</p>}
       </div>
     )
   }
 
   if (pageState === 'missed_registration') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-6">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M15 9l-6 6M9 9l6 6"/>
-          </svg>
+      <div className="min-h-screen bg-white">
+        <PageHeader />
+        <div className="flex flex-col items-center justify-center px-8 text-center py-24">
+          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M15 9l-6 6M9 9l6 6"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Registration closed</h2>
+          <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+            The registration window for this poll has closed. You needed to register before{' '}
+            {poll && <span className="font-medium text-gray-600">{formatDateTime(poll.registration_closes_at)}</span>}
+            {' '}to be eligible to vote.
+          </p>
         </div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Registration closed</h2>
-        <p className="text-sm text-gray-400">
-          The registration window for this poll has closed. You needed to register before{' '}
-          {poll && <span className="font-medium text-gray-600">{formatDateTime(poll.registration_closes_at)}</span>}
-          {' '}to be eligible to vote.
-        </p>
-      </div>
-    )
-  }
-
-  if (pageState === 'error') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
-        <p className="text-4xl mb-4">⚠️</p>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h2>
-        <p className="text-sm text-gray-400">{error}</p>
       </div>
     )
   }
 
   if (pageState === 'not_allowed') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-6">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M15 9l-6 6M9 9l6 6"/>
-          </svg>
+      <div className="min-h-screen bg-white">
+        <PageHeader />
+        <div className="flex flex-col items-center justify-center px-8 text-center py-24">
+          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M15 9l-6 6M9 9l6 6"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Access restricted</h2>
+          <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+            This poll is only available to{' '}
+            <span className="font-medium text-gray-600">{poll?.allowed_providers?.join(', ')}</span>{' '}
+            users. You signed in with{' '}
+            <span className="font-medium text-gray-600">{user?.provider}</span>.
+          </p>
         </div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Access restricted</h2>
-        <p className="text-sm text-gray-400">
-          This poll is only available to{' '}
-          <span className="font-medium text-gray-600">
-            {poll?.allowed_providers?.join(', ')}
-          </span>{' '}
-          users. You signed in with{' '}
-          <span className="font-medium text-gray-600">{user?.provider}</span>.
-        </p>
+      </div>
+    )
+  }
+
+  if (pageState === 'not_a_member') {
+    return (
+      <div className="min-h-screen bg-white">
+        <PageHeader />
+        <div className="flex flex-col items-center justify-center px-8 text-center py-24">
+          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Not a community member</h2>
+          <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+            This poll is restricted to members of a specific community. Contact the poll creator to get an invite link.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (pageState === 'error') {
+    return (
+      <div className="min-h-screen bg-white">
+        <PageHeader />
+        <div className="flex flex-col items-center justify-center px-8 text-center py-24">
+          <p className="text-4xl mb-4">⚠️</p>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h2>
+          <p className="text-sm text-gray-400">{error}</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white border-b border-gray-100">
-         <PollyLogo />
+      <PageHeader right={
         <p className="text-xs md:text-sm text-orange-400 font-medium">
           {poll && timeLeft(poll.voting_closes_at)}
         </p>
-      </div>
+      } />
 
       <div className="px-4 md:px-8 py-6 max-w-3xl mx-auto">
-        {/* Cover Image */}
         <div className="w-full aspect-[16/7] bg-gray-200 rounded-3xl mb-8 overflow-hidden">
           <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
         </div>
@@ -569,7 +581,7 @@ export default function VotePage() {
         )}
 
         <p className="text-sm font-semibold text-gray-700 mb-4">Choose your option</p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           {candidates.map((candidate) => {
             const isSelected = selectedId === candidate.id
@@ -588,11 +600,7 @@ export default function VotePage() {
                       <p className="text-sm text-gray-500 line-clamp-2">{candidate.description}</p>
                     )}
                   </div>
-                  <div
-                    className={`ml-4 w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                      isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
-                    }`}
-                  >
+                  <div className={`ml-4 w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}`}>
                     {isSelected && <div className="w-3 h-3 rounded-full bg-white" />}
                   </div>
                 </div>
