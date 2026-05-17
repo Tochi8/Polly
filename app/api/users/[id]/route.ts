@@ -26,3 +26,32 @@ export async function DELETE(
     )
   }
 }
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params
+    const { username, notification_preferences } = await req.json()
+
+    const updateData: any = {}
+    if (username !== undefined) updateData.username = username
+    if (notification_preferences !== undefined) updateData.notification_preferences = notification_preferences
+
+    const { data: updatedUser, error } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ user: updatedUser })
+  } catch {
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
+  }
+}

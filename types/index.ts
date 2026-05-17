@@ -3,7 +3,11 @@ export interface User {
   username: string
   provider: string
   role: string
-   created_at: string
+  created_at: string
+  notification_preferences?: {
+    vote_notifications: boolean
+    registration_alerts: boolean
+  }
 }
 
 export interface Poll {

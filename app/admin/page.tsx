@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Poll, User } from '@/types/index'
 import { useUser } from '@/hooks/useUser'
 import { usePolls } from '@/hooks/usePolls'
@@ -240,7 +240,7 @@ function HamburgerMenu({ user, onClose, onLogout, router }: { user: User; onClos
 }
 
 function BottomNav({ router }: { router: ReturnType<typeof useRouter> }) {
-  const path = typeof window !== 'undefined' ? window.location.pathname : ''
+  const path = usePathname()
   const items = [
     { label: 'Home', path: '/admin', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
     { label: 'Create', path: '/admin/polls/new', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> },
@@ -265,6 +265,7 @@ function BottomNav({ router }: { router: ReturnType<typeof useRouter> }) {
 
 export default function AdminDashboard() {
   const router = useRouter()
+  const path = usePathname()
   const { user, mounted } = useUser('admin')
   const { polls, loading, error: pollsError, refetch } = usePolls(user?.id)
 
@@ -327,47 +328,32 @@ export default function AdminDashboard() {
         <PollyLogo />
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          <button onClick={() => router.push('/admin')} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#2d5a1b] bg-green-50 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            Home
-          </button>
-          <button onClick={() => router.push('/admin/polls/new')} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="16"/>
-              <line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            Create Poll
-          </button>
-          <button onClick={() => router.push('/admin/communities')} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            Communities
-          </button>
-          <button onClick={() => router.push('/admin/analytics')} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"/>
-              <line x1="12" y1="20" x2="12" y2="4"/>
-              <line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-            Analytics
-          </button>
-          <button onClick={() => router.push('/admin/profile')} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            Profile
-          </button>
-        </div>
+      <div className="hidden md:flex items-center gap-1">
+        <button onClick={() => router.push('/admin')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${path === '/admin' ? 'text-[#2d5a1b] bg-green-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+         Home
+        </button>
+
+        <button onClick={() => router.push('/admin/polls/new')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${path === '/admin/polls/new' ? 'text-[#2d5a1b] bg-green-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Create Poll
+        </button>
+
+        <button onClick={() => router.push('/admin/communities')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${path.startsWith('/admin/communities') ? 'text-[#2d5a1b] bg-green-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Communities
+        </button>
+
+        <button onClick={() => router.push('/admin/analytics')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${path === '/admin/analytics' ? 'text-[#2d5a1b] bg-green-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Analytics
+        </button>
+        
+        <button onClick={() => router.push('/admin/profile')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${path === '/admin/profile' ? 'text-[#2d5a1b] bg-green-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+        </button>
+      </div>
 
         {/* Right side */}
         <div className="flex items-center gap-2">
