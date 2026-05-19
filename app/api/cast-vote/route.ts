@@ -27,7 +27,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Voting is not yet open for this poll, check back later' }, { status: 400 })
     }
 
-    // Fetch user
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('provider, provider_id')
@@ -38,7 +37,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Provider restriction check
     const allowedProviders: string[] = poll.allowed_providers ?? ['x', 'discord', 'telegram']
     if (!allowedProviders.includes(user.provider)) {
       return NextResponse.json(
