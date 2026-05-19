@@ -30,18 +30,12 @@ export async function POST(req: Request) {
         }
 
         if (community.registration_deadline) {
-            const deadline = new Date(community.registration_deadline)
-            if (new Date() > deadline) {
-                // Auto close registration
-                await supabase
-                    .from('communities')
-                    .update({ registration_open: false })
-                    .eq('id', community.id)
-
-                return NextResponse.json(
-                    { error: 'Registration deadline for this community has passed' },
-                    { status: 400 }
-                )
+        const deadline = new Date(community.registration_deadline)
+        if (new Date() > deadline && community.registration_open) {
+        return NextResponse.json(
+        { error: 'Registration deadline for this community has passed' },
+        { status: 400 }
+            )
             }
         }
 

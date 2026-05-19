@@ -102,24 +102,32 @@ export default function CommunityDetailPage() {
   }
 
   async function handleToggleRegistration() {
-    if (!community) return
-    setToggling(true)
-    try {
-      const res = await fetch(`/api/communities/${community.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registration_open: !community.registration_open }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setCommunity(prev => prev ? { ...prev, registration_open: data.community.registration_open } : prev)
-      }
-    } catch {
-      setError('Failed to update registration status')
-    } finally {
-      setToggling(false)
+  if (!community) return
+  setToggling(true)
+  try {
+    const isReopening = !community.registration_open
+    const res = await fetch(`/api/communities/${community.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        registration_open: !community.registration_open,
+        ...(isReopening && { registration_deadline: null }),
+      }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setCommunity(prev => prev ? {
+        ...prev,
+        registration_open: data.community.registration_open,
+        registration_deadline: isReopening ? null : prev.registration_deadline,
+      } : prev)
     }
+  } catch {
+    setError('Failed to update registration status')
+  } finally {
+    setToggling(false)
   }
+}
 
   if (!mounted || !user) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
