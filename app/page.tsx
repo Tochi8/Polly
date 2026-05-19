@@ -54,7 +54,7 @@ export default function LandingPage() {
       {/* ── HERO ── */}
       <section className="px-5 lg:px-12 pt-12 lg:pt-24 pb-8 lg:pb-16 max-w-lg lg:max-w-5xl mx-auto text-center">
         <h1 className="text-[2.1rem] lg:text-[3.2rem] font-bold text-gray-900 leading-tight tracking-tight mb-4">
-          Voting that social communities <span className="text-[#2d5a1b]">can trust.</span>
+          Voting that online communities <span className="text-[#2d5a1b]">can trust.</span>
         </h1>
         <p className="text-[15px] lg:text-[17px] text-gray-500 leading-relaxed mb-8 max-w-sm lg:max-w-xl mx-auto">
           Polly lets your community run polls where every voter is verified, every vote is transparent, locked on-chain, and anyone can check the result. No complex wallet setup.
@@ -80,42 +80,52 @@ export default function LandingPage() {
         <div className="text-center mb-8 lg:mb-12">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">How it works</h2>
           <p className="text-sm lg:text-base text-gray-500 leading-relaxed">
-            Three phases that keep every vote honest and every result verifiable
+          Four phases that keeps every vote honest and every result verifiable
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5">
-          <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100 flex-1">
-            <div className="flex items-center gap-3 mb-3 lg:mb-4">
-              <span className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-xs font-bold text-amber-600">01</span>
-              <h3 className="text-sm lg:text-base font-bold text-gray-900">Registration</h3>
-            </div>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              The admin opens a registration window. Community members sign in with Discord, Telegram, or X to register for a poll. Once registration closes, the voter list is locked permanently.
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-5">
+        <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100">
+           <div className="flex items-center gap-3 mb-3 lg:mb-4">
+            <span className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-xs font-bold text-amber-600">01</span>
+              <h3 className="text-sm lg:text-base font-bold text-gray-900">Community Registration</h3>
+           </div>
+              <p className="text-sm text-gray-500 leading-relaxed">
+              The admin creates a community and opens a registration window. Interested members sign in with Google, Discord, or X to join the community. Once registration closes, the community member list is locked permanently.
+              </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100 flex-1">
-            <div className="flex items-center gap-3 mb-3 lg:mb-4">
-              <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-xs font-bold text-blue-600">02</span>
-              <h3 className="text-sm lg:text-base font-bold text-gray-900">Voting</h3>
-            </div>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Only registered members can vote. Each person gets exactly one vote. A unique hash is generated and sent to the blockchain. Your identity stays private, but vote is permanent.
-            </p>
+        <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100">
+          <div className="flex items-center gap-3 mb-3 lg:mb-4">
+            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-xs font-bold text-blue-600">02</span>
+              <h3 className="text-sm lg:text-base font-bold text-gray-900">Poll Registration</h3>
           </div>
-
-          <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100 flex-1">
-            <div className="flex items-center gap-3 mb-3 lg:mb-4">
-              <span className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center text-xs font-bold text-purple-600">03</span>
-              <h3 className="text-sm lg:text-base font-bold text-gray-900">Verification</h3>
-            </div>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Once voting closes, every vote is on-chain and permanent. Anyone can independently verify results using the public transaction record.
-            </p>
-          </div>
+              <p className="text-sm text-gray-500 leading-relaxed">
+              The admin creates a poll and opens a registration window. Only community members can register for the poll by signing in with the same account they used to join the community. Once registration closes, the voter list is locked permanently.
+              </p>
         </div>
-      </section>
+
+        <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100">
+          <div className="flex items-center gap-3 mb-3 lg:mb-4">
+            <span className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center text-xs font-bold text-green-600">03</span>
+              <h3 className="text-sm lg:text-base font-bold text-gray-900">Voting</h3>
+          </div>
+              <p className="text-sm text-gray-500 leading-relaxed">
+              Only registered community members can vote. Each person gets exactly one vote. A unique hash is generated and sent to the blockchain. Your identity stays private, but your vote is permanent.
+              </p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 lg:p-7 border border-gray-100">
+          <div className="flex items-center gap-3 mb-3 lg:mb-4">
+            <span className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center text-xs font-bold text-purple-600">04</span>
+              <h3 className="text-sm lg:text-base font-bold text-gray-900">Verification</h3>
+          </div>
+              <p className="text-sm text-gray-500 leading-relaxed">
+              Once voting closes, every vote is on-chain and permanent. Anyone can independently verify results using the public transaction record.
+              </p>
+        </div>
+      </div>
+    </section>
 
       {/* ── FEATURES ── */}
       <section className="px-5 lg:px-12 pb-12 lg:pb-20 max-w-lg lg:max-w-5xl mx-auto">
@@ -146,7 +156,7 @@ export default function LandingPage() {
               </svg>
             </div>
             <h3 className="text-xs lg:text-sm font-bold text-gray-900 mb-1 leading-snug">One person, one vote</h3>
-            <p className="text-xs text-gray-500 leading-relaxed">Duplicate votes are mathematically impossible.</p>
+            <p className="text-xs text-gray-500 leading-relaxed">Our verification system makes it hard to duplicate votes.</p>
           </div>
 
           <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-100">
@@ -203,7 +213,7 @@ export default function LandingPage() {
             Ready to run a fair vote for your community?
           </h2>
           <p className="text-sm lg:text-base text-green-200 mb-6 lg:mb-8 leading-relaxed max-w-lg mx-auto">
-            Create your first poll in minutes. Share the link and let your community decide transparently.
+            Create your first community and poll in minutes. Share the link and let your community decide transparently.
           </p>
           <button
             onClick={() => router.push('/login')}
@@ -230,7 +240,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <p className="text-xs text-gray-500 max-w-xs leading-relaxed">
-                Verified, tamper-proof voting for social communities.
+                Verified, tamper-proof voting for online communities.
               </p>
             </div>
 
@@ -247,9 +257,7 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Follow</p>
-                <a href="#" className="text-xs text-gray-500 hover:text-white transition-colors">X</a>
-                <a href="#" className="text-xs text-gray-500 hover:text-white transition-colors">Instagram</a>
-                <a href="#" className="text-xs text-gray-500 hover:text-white transition-colors">LinkedIn</a>
+                <Link href="https://x.com/usepolly_" className="text-xs text-gray-500 hover:text-white transition-colors">X</Link>
               </div>
             </div>
           </div>
@@ -267,30 +275,25 @@ export default function LandingPage() {
 
             {/* Desktop social icons */}
             <div className="hidden lg:flex items-center gap-4">
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">
+              <a href="https://x.com/usepolly_" className="text-gray-500 hover:text-white transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.3 1.6h3.4L14.5 10l8.5 11.2h-7l-4.9-6.4-5.7 6.4H2l7.7-8.7L1.7 1.6h7.2l4.5 5.9 5-5.9zm-1.2 18.6h1.9L7 3.5H4.9l12.2 16.7z"/>
                 </svg>
               </a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                </svg>
-              </a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                  <rect x="2" y="9" width="4" height="12"/>
-                  <circle cx="4" cy="4" r="2"/>
-                </svg>
-              </a>
             </div>
           </div>
+
+          {/* Mobile social icons */}
+          <div className="flex lg:hidden items-center gap-4 mt-4">
+            <a href="https://x.com/usepolly_" className="text-gray-500 hover:text-white transition-colors">
+               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.3 1.6h3.4L14.5 10l8.5 11.2h-7l-4.9-6.4-5.7 6.4H2l7.7-8.7L1.7 1.6h7.2l4.5 5.9 5-5.9zm-1.2 18.6h1.9L7 3.5H4.9l12.2 16.7z"/>
+              </svg>
+            </a>
+          </div>
+
         </div>
       </footer>
-
     </div>
   )
 }
