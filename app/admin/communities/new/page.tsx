@@ -120,7 +120,7 @@ export default function NewCommunityPage() {
     <div className="min-h-screen bg-[#f5f5f5]">
       <div className="flex items-center justify-between px-4 lg:px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-30">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/admin/communities')}
           className="text-gray-500 text-sm hover:text-gray-800 transition-colors"
         >
           ← Back

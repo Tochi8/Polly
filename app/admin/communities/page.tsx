@@ -77,22 +77,21 @@ export default function CommunitiesPage() {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 lg:px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-30">
+      <div className="flex items-center justify-between px-4 lg:px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-30 max-w-full">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/admin')}
           className="text-gray-500 text-sm hover:text-gray-800 transition-colors"
         >
           ← Back
         </button>
-        <span className="text-sm font-semibold text-gray-700">Communities</span>
+          <span className="text-sm font-semibold text-gray-700">Communities</span>
         <button
           onClick={() => router.push('/admin/communities/new')}
           className="text-sm font-semibold text-[#2d5a1b] hover:text-[#254d17] transition-colors"
         >
-          + New
+          + New community
         </button>
       </div>
-
       <div className="px-4 lg:px-8 py-6 max-w-lg lg:max-w-4xl mx-auto">
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
